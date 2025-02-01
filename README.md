@@ -1,12 +1,13 @@
 # Azure OpenAI Streaming Demo
 
-A minimal Python demo to stream completions from an Azure OpenAI deployment via APIM and count tokens using [tiktoken](https://github.com/openai/tiktoken) on client-side and then compare against usage data returned from AOAI.
+A minimal Python demo to stream completions from an Azure OpenAI deployment via APIM, count tokens using [tiktoken](https://github.com/openai/tiktoken) on the client-side, and compare against usage data returned from Azure OpenAI (AOAI). Includes advanced debugging features for API response analysis.
 
 ## Prerequisites
 
 - Python 3.7+
-- An Azure OpenAI deployment behind API Management
+- An Azure OpenAI deployment behind API Management (APIM)
 - APIM subscription key
+- Azure CLI (for debugging script functionality)
 
 ## Setup
 
@@ -33,22 +34,36 @@ A minimal Python demo to stream completions from an Azure OpenAI deployment via 
    In your shell, set the following variables (you can also set them permanently or via your system settings):
 
    ```bash
-   export API_MANAGEMENT_GATEWAY_URL="https://<your-apim-instance>.azure-api.net"
-   export DEPLOYMENT_NAME="<your-deployment-name>"
+   export APIM_DEPLOYMENT_NAME="<your-apim-deployment-name>"
    export APIM_SUBSCRIPTION_KEY="<your-apim-subscription-key>"
-   export API_VERSION="2024-03-01-preview"       # Optional, default is used if not set
-   export MODEL_FOR_TOKENS="gpt-4o-mini-2024-07-18" # Optional, default is used if not set
+   export OPENAI_DEPLOYMENT_NAME="gpt-35-turbo"        # Adjust as needed
+   export OPENAI_API_VERSION="2024-09-01-preview"      # Optional, default is used if not set
    ```
+
+   **Note:** These environment variables are required for both `main.py` and `azure_openai_streaming.py`.
 
 ## Run the Demo
 
-Simply run:
+### 1️⃣ **Streaming Completion with Token Analysis**
 
 ```bash
-python main.py
+python src/main.py
 ```
 
-When prompted, enter your question. The script streams the response in real time and logs token counts for both the prompt and the generated completion.
+- Streams the response in real time.
+- Compares token counts using tiktoken against AOAI's usage data.
+
+### 2️⃣ **Debugging Script**
+
+```bash
+python src/traces.py
+```
+
+- Captures detailed API response information, including:
+  - APIM trace IDs
+  - Token streaming timelines
+  - Token distribution charts
+  - Debugging tables with key metrics for troubleshooting
 
 ## License
 
