@@ -1,6 +1,6 @@
 # Azure OpenAI Streaming Demo
 
-A minimal Python demo to stream completions from an Azure OpenAI deployment via APIM and count tokens using [tiktoken](https://github.com/openai/tiktoken).
+A minimal Python demo to stream completions from an Azure OpenAI deployment via APIM and count tokens using [tiktoken](https://github.com/openai/tiktoken) on client-side and then compare against usage data returned from AOAI.
 
 ## Prerequisites
 
