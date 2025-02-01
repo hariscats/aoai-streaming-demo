@@ -6,6 +6,7 @@ import time
 from datetime import datetime
 from dotenv import load_dotenv
 import tiktoken
+from tabulate import tabulate
 
 # Load environment variables
 load_dotenv()
@@ -17,7 +18,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 api_management_gateway_url = os.getenv("API_MANAGEMENT_GATEWAY_URL")
 deployment_name = os.getenv("DEPLOYMENT_NAME")  # The deployment name for the API call
 subscription_key = os.getenv("APIM_SUBSCRIPTION_KEY")
-api_version = os.getenv("API_VERSION", "2024-03-01-preview")
+api_version = os.getenv("API_VERSION", "2024-09-01-preview")
 # Model used for token counting (adjust as needed)
 token_count_model = os.getenv("MODEL_FOR_TOKENS", "gpt-4o-mini-2024-07-18")
 
@@ -44,7 +45,7 @@ request_headers = {
 # Get user input
 user_message = input("Enter your question: ")
 
-# Build the request body with streaming enabled
+# Build the request body with streaming enabled, including usage information
 request_body = {
     "messages": [
         {"role": "system", "content": "You are a helpful AI assistant."},
@@ -55,7 +56,8 @@ request_body = {
     "top_p": 0.95,
     "frequency_penalty": 0,
     "presence_penalty": 0,
-    "stream": True  # Enable streaming
+    "stream": True,  # Enable streaming
+    "stream_options": {"include_usage": True}  # Request that usage data is returned
 }
 
 ###############################################################################
@@ -150,6 +152,8 @@ def stream_chat_completion(endpoint, headers, body):
 # Process the streaming response and count tokens in the completion text
 ###############################################################################
 collected_tokens = []
+all_chunks = []         # Store every JSON chunk for later printing
+streamed_usage = None   # To capture the usage field from the final chunk
 start_time = time.time()
 
 logging.info("Streaming response...")
@@ -160,7 +164,14 @@ for chunk in stream_chat_completion(completions_endpoint, request_headers, reque
         logging.error("Received an error chunk; aborting.")
         break
 
-    # Extract the token from the delta field (streamed responses use 'delta' instead of a full message)
+    # Append the chunk to our list of all chunks
+    all_chunks.append(chunk)
+
+    # Check if this chunk contains usage information (typically in the final chunk)
+    if "usage" in chunk and chunk["usage"]:
+        streamed_usage = chunk["usage"]
+
+    # Extract tokens from the delta field (streamed responses use 'delta' instead of a full message)
     if "choices" in chunk and chunk["choices"]:
         delta = chunk["choices"][0].get("delta", {})
         token = delta.get("content")
@@ -182,9 +193,36 @@ except KeyError:
     print("Warning: model not found. Using o200k_base encoding.")
     encoding = tiktoken.get_encoding("o200k_base")
 completion_token_count = len(encoding.encode(full_reply))
-logging.info(f"Completion token count: {completion_token_count}")
+logging.info(f"Completion token count (tiktoken): {completion_token_count}")
 
 total_tokens = prompt_token_count + completion_token_count
 logging.info(f"Full reply: {full_reply}")
 logging.info(f"Total streaming time: {total_time:.2f} seconds")
-logging.info(f"Total tokens used (prompt + completion): {total_tokens}")
+logging.info(f"Total tokens used (computed): {total_tokens}")
+
+# Print raw streamed JSON output and usage before printing the table
+print("\nRaw Streamed JSON Output:")
+print(json.dumps(all_chunks, indent=4))
+
+if streamed_usage:
+    print("\nStreamed Usage Data:")
+    print(json.dumps(streamed_usage, indent=4))
+else:
+    print("\nNo usage data was received in the stream.")
+
+# Prepare comparison table data
+if streamed_usage:
+    api_prompt_tokens = streamed_usage.get("prompt_tokens", "N/A")
+    api_completion_tokens = streamed_usage.get("completion_tokens", "N/A")
+    api_total_tokens = streamed_usage.get("total_tokens", "N/A")
+else:
+    api_prompt_tokens = api_completion_tokens = api_total_tokens = "N/A"
+
+table_data = [
+    ["Prompt Tokens", prompt_token_count, api_prompt_tokens],
+    ["Completion Tokens", completion_token_count, api_completion_tokens],
+    ["Total Tokens", total_tokens, api_total_tokens]
+]
+
+print("\nComparison Table:")
+print(tabulate(table_data, headers=["Metric", "Computed", "API Usage"], tablefmt="grid"))
