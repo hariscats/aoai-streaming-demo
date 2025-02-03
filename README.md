@@ -36,8 +36,9 @@ A minimal Python demo to stream completions from an Azure OpenAI deployment via 
    ```bash
    export APIM_DEPLOYMENT_NAME="<your-apim-deployment-name>"
    export APIM_SUBSCRIPTION_KEY="<your-apim-subscription-key>"
-   export OPENAI_DEPLOYMENT_NAME="gpt-35-turbo"        # Adjust as needed
-   export OPENAI_API_VERSION="2024-09-01-preview"      # Optional, default is used if not set
+   export API_MANAGEMENT_GATEWAY_URL="<your-apim-gateway-url>"
+   export DEPLOYMENT_NAME="gpt-35-turbo"        # Adjust as needed
+   export API_VERSION="2024-09-01-preview"      # Optional, default is used if not set
    ```
 
    **Note:** These environment variables are required for both `main.py` and `azure_openai_streaming.py`.
